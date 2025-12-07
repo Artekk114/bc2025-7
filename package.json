@@ -1,0 +1,35 @@
+{
+  "name": "bc2025-6",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node lab6.js",
+    "dev": "nodemon lab6.js",
+    "dev:debug": "nodemon -L --inspect=0.0.0.0:9229 lab6.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Artekk114/bc2025-6.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Artekk114/bc2025-6/issues"
+  },
+  "homepage": "https://github.com/Artekk114/bc2025-6#readme",
+  "dependencies": {
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.3",
+    "superagent": "^10.2.3",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
