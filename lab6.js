@@ -8,54 +8,47 @@ const express = require('express')
 const multer = require('multer');
 const swaggerUi = require("swagger-ui-express");
 const yaml = require("yamljs");
-
+require('dotenv').config();
 const swaggerDocument = yaml.load(path.join(__dirname,"inventory.yaml"));
+const mysql = require("mysql2");
 
-program 
 
-.requiredOption("-h, --host <host>", "Введіть адресу хоста")
-.requiredOption("-p, --port <port>", "Введіть порт сервера")
-.requiredOption("-c, --cache <path>", "Введіть шлях до директорії");
-
-program.configureOutput({
-outputError: (str, write) => {
- }
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,       
+  user: process.env.DB_USER,       
+  password: process.env.DB_PASSWORD, 
+  database: process.env.DB_NAME    
 });
 
-program.exitOverride();
 
 
-try{
-program.parse();
 
+program
+  .option('-h, --host <host>')
+  .option('-p, --port <port>')
+  .option('-c, --cache <path>');
+
+program.parse(process.argv);
+const options = program.opts();
+
+// Визначаємо змінні: пріоритет у аргументів CLI, потім .env, потім дефолт
+const host = options.host || process.env.HOST || '0.0.0.0';
+const port = options.port || process.env.PORT || 3000;
+const cache = options.cache || process.env.CACHE_DIR || './cache';
+
+// Перевірка: якщо змінних немає НІДЕ — тоді помилка
+if (!host || !port || !cache) {
+  console.error("Please напишіть потрібний argument or set .env variables");
+  process.exit(1);
 }
-catch(err){
-if (err.code === 'commander.missingMandatoryOptionValue') {
-    console.error("Please write required argument")
-  }
- else console.error(err.message)
- process.exit(1);
-}
-const options= program.opts();
-const cachePath = path.resolve(options.cache);
- if (!fs.existsSync(cachePath)) {
-  console.error("Директорія кешу не існує");
-  fs.mkdirSync(cachePath, { recursive: true });
-  console.log("Директорію створено");
- }
- else {
-    console.log("Директорія кешу вже існує:", cachePath);
- };
 
- const host = options.host;
- const port = options.port;
  const app = express();
  app.use(express.json());
  app.use(express.urlencoded({ extended: true }));
 
  const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, cachePath);
+        cb(null, cache);
     },
     filename: function (req, file, cb) {
 
@@ -79,7 +72,7 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.post('/register', upload.single('photo'), (req,res)=>{
     const {inventory_name,description}=req.body;
     if (!inventory_name) {
-        return res.status(400).send('Bad Request: inventory_name is required');
+        return res.status(400).send('Поганий Request: inventory_name is required');
     }
     const newItem = {
         id: Date.now().toString(),
@@ -92,7 +85,7 @@ app.post('/register', upload.single('photo'), (req,res)=>{
 });
 
 app.get('/inventory', (req,res)=>{
-
+debugger;
 const result = inventory.map(item => ({
     ...item,
     photoUrl: item.photo ? `http://localhost:${port}/inventory/${item.id}/photo` : null
@@ -120,7 +113,7 @@ app.put('/inventory/:id', (req,res)=>{
 app.get('/inventory/:id/photo', (req,res)=>{
     const item = inventory.find(i => i.id === req.params.id);
     if (!item || !item.photo) return res.status(404).send('Not found');
-    const filePath = path.join(cachePath, item.photo);
+    const filePath = path.resolve(__dirname, cache, item.photo);
     if (fs.existsSync(filePath)) {
         res.set('Content-Type', 'image/png');
         res.sendFile(filePath);
@@ -142,7 +135,7 @@ const idx = inventory.findIndex(i => i.id === req.params.id);
 if (idx === -1) return res.status(404).send('Not found');
 const item = inventory[idx];
 if (item.photo){
-    const p = path.join(cachePath, item.photo);
+    const p = path.join(cache, item.photo);
         if (fs.existsSync(p)) fs.unlinkSync(p);
 }
 inventory.splice(idx, 1);
@@ -164,7 +157,7 @@ app.use((req,res)=>{
 });
 const server = http.createServer(app);
 server.listen(port, host, () => {
-    console.log(`Сервер успішно запущено на http://localhost:${port}`);
+    console.log(`Сервер успішно запущено у http://localhost:${port}`);
     
 });
 
